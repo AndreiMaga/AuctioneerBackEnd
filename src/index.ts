@@ -9,10 +9,6 @@ class App {
     this.app.get("/", (req, res) => {});
 
     /**
-     * Request to see the auction at id, returns the auction
-     */
-    this.app.post("/auction/:id", this.auctionid.bind(this));
-    /**
      * Request to bid on the auction at id
      */
     this.app.post("/auction/bid/:id", async (req, res) => {});
@@ -22,15 +18,6 @@ class App {
      */
     this.app.post("/auction/bids/:id", async (req, res) => {});
 
-    /**
-     * Request to login, returns a sessionid
-     */
-    this.app.post("/login", async (req, res) => {});
-
-    /**
-     * Request to delete sessionid
-     */
-    this.app.post("/logout", async (req, res) => {});
 
     this.app.listen(port, () => {
       console.log(`Express server started`);
