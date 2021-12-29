@@ -1,30 +1,100 @@
-import express, { Express } from "express";
+// const express = require('express').default;
+import bodyParser from "body-parser";
+import cors from "cors";
+import express, { Express, Request, Response } from "express";
+import morgan from "morgan";
+import dotenv from "dotenv";
+
 import { port } from "./config/.server.json";
-import { LogCalls } from "./functions/server";
+import { apiKeyIsValid, tokenIsValid } from "./functions/login";
+import { tryToBid } from "./functions/server";
+import initFirebase from "./firebase/firebase";
+
+interface IBidResponse {
+  error?: string;
+  success?: boolean;
+}
+
+export interface IBidRequest {
+  apikey: string;
+  token: string;
+  user: string;
+  bid: number;
+  auctionid: string;
+  time: number;
+}
+
 class App {
   app: Express;
 
   constructor() {
+    dotenv.config();
+
     this.app = express();
-    this.app.get("/", (req, res) => {});
+    this.app.use(morgan("short"));
+    this.app.use(cors());
+    this.app.use(bodyParser.urlencoded({ extended: false }));
+    this.app.use(bodyParser.json());
+    this.app.get("/", (req, res) => {
+      res.json({ app: "What can man do against such reckless hate?" });
+    });
 
     /**
      * Request to bid on the auction at id
      */
-    this.app.post("/auction/bid/:id", async (req, res) => {});
-
-    /**
-     * Request to see the list of bids, return the list of bids
-     */
-    this.app.post("/auction/bids/:id", async (req, res) => {});
-
+    this.app.post("/auction/bid/:id", this.bid.bind(this));
 
     this.app.listen(port, () => {
-      console.log(`Express server started`);
+      console.log(`Express server started on port:${port}`);
     });
   }
 
-  @LogCalls
+  somethingWentWrong(res: Response, response: IBidResponse) {
+    response.error = "Something went wrong.";
+    res.json(response);
+    return;
+  }
+
+  async bid(req: Request, res: Response) {
+
+    let reqBody = req.body as IBidRequest
+
+    let apikey = reqBody.apikey;
+    console.log(reqBody)
+    let response: IBidResponse = { success: false };
+
+    // if (!apiKeyIsValid(apikey)) {
+    //   this.somethingWentWrong(res, response);
+    //   return;
+    // }
+
+
+    // if (!(await tokenIsValid(reqBody))) {
+    //   this.somethingWentWrong(res, response);
+    //   return;
+    // }
+
+    try{
+      let tryBid = await tryToBid(reqBody)
+
+      if(tryBid.error){
+        response.error = tryBid.error;
+        console.error(tryBid)
+        res.json(response);
+        return
+      }
+    }catch(e){
+      console.error(e)
+      this.somethingWentWrong(res, response)
+      return
+    }
+
+
+
+    response.success = true;
+    res.json(response);
+  }
+
   async auctionid(req: any, res: any) {
     let response = {
       data: req.params.id,
@@ -34,4 +104,5 @@ class App {
   }
 }
 
+initFirebase();
 new App();
